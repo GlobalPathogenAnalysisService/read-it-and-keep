@@ -3,7 +3,7 @@ Read contamination removal.
 
 
 ## Compile
-Make the executable `readItAndKeep`  in the `src` directory by running:
+Make the executable `src/readItAndKeep` by running:
 ```
 cd src && make
 ```
