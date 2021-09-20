@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# executables made when running make
+minimap2
+readItAndKeep
