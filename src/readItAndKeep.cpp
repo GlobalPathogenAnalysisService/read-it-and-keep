@@ -47,7 +47,7 @@ public:
     void clearMapping();
     void write();
     bool isGoodMapping();
-	kseq_t* readPtr;
+    kseq_t* readPtr;
     bool isBeingUsed;
 
 private:
@@ -77,26 +77,26 @@ public:
 int main(int argc, char *argv[])
 {
     CommandLineOptions options(argc, argv);
-	mm_idxopt_t iopt;
-	mm_mapopt_t mopt;
-	int n_threads = 1;
+    mm_idxopt_t iopt;
+    mm_mapopt_t mopt;
+    int n_threads = 1;
 
-	mm_verbose = 2; // disable message output to stderr
-	mm_set_opt(0, &iopt, &mopt);
-	//mopt.flag |= MM_F_CIGAR; // perform alignment
+    mm_verbose = 2; // disable message output to stderr
+    mm_set_opt(0, &iopt, &mopt);
+    //mopt.flag |= MM_F_CIGAR; // perform alignment
 
     QueryReads queryReads1(options.readsIn1, options.readsOut1, options);
     QueryReads queryReads2(options.readsIn2, options.readsOut2, options);
     Stats stats;
 
-	// open index reader
-	mm_idx_reader_t *r = mm_idx_reader_open(options.refFasta.c_str(), &iopt, 0);
-	mm_idx_t *mi;
-	while ((mi = mm_idx_reader_read(r, n_threads)) != 0) { // traverse each part of the index
-		mm_mapopt_update(&mopt, mi); // this sets the maximum minimizer occurrence; TODO: set a better default in mm_mapopt_init()!
+    // open index reader
+    mm_idx_reader_t *r = mm_idx_reader_open(options.refFasta.c_str(), &iopt, 0);
+    mm_idx_t *mi;
+    while ((mi = mm_idx_reader_read(r, n_threads)) != 0) { // traverse each part of the index
+        mm_mapopt_update(&mopt, mi); // this sets the maximum minimizer occurrence; TODO: set a better default in mm_mapopt_init()!
         queryReads1.resetForNextRefSeq();
         queryReads2.resetForNextRefSeq();
-		while (queryReads1.readNext()) {
+        while (queryReads1.readNext()) {
             stats.readsIn1++;
             if (queryReads2.isBeingUsed) {
                 if (not queryReads2.readNext()) {
@@ -131,18 +131,18 @@ int main(int argc, char *argv[])
             if (stats.readsIn1 % 100000 == 0) {
                 std::cerr << "Read " << stats.readsIn1 << " read (pairs)" << std::endl;
             }
-		}
-		mm_idx_destroy(mi);
-	}
+        }
+        mm_idx_destroy(mi);
+    }
     if (queryReads2.isBeingUsed and queryReads2.readNext()) {
         std::cerr << "Used all reads from first file, but got another read '"
                   << queryReads2.readPtr->name.s
                   << "' from second reads file\n";
         exitWithError(67);
     }
-	mm_idx_reader_close(r); // close the index reader
+    mm_idx_reader_close(r); // close the index reader
     stats.toStdout();
-	return 0;
+    return 0;
 }
 
 CommandLineOptions::CommandLineOptions(int argc, char *argv[]) {
