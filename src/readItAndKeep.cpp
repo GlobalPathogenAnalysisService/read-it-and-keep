@@ -1,6 +1,3 @@
-// To compile:
-// g++ -pthread -O2 decontaminator.cpp libminimap2.a -lz -lm -o decontaminator
-
 #include "CLI11.hpp"
 #include <stdlib.h>
 #include <assert.h>
@@ -167,7 +164,7 @@ void exitWithError(unsigned int errorCode) {
     exit(errorCode);
 }
 
-//int parseCommandLineOpts(CommandLineOptions& options, int argc, char *argv[]) {
+
 int CommandLineOptions::parseCommandLineOpts(int argc, char *argv[]) {
     CLI::App app{};
 
