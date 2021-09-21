@@ -12,9 +12,10 @@ KSEQ_INIT(gzFile, gzread)
 
 const std::map<unsigned int, std::string> ERRORS = {
     {64, "Error parsing command line options or input file not found"},
-    {65, "Error opening file for writing"},
-    {66, "Reads file 1 has more reads than reads file 2"},
-    {67, "Reads file 2 has more reads than reads file 1"},
+    {65, "Error opening reads input file"},
+    {66, "Error opening file for writing"},
+    {67, "Reads file 1 has more reads than reads file 2"},
+    {68, "Reads file 2 has more reads than reads file 1"},
 };
 
 
@@ -28,8 +29,8 @@ public:
     std::string refFasta;
     std::string readsIn1;
     std::string readsIn2;
-    std::string readsOut1;
-    std::string readsOut2;
+    std::string readsOutprefix1;
+    std::string readsOutprefix2;
     std::string outprefix;
     bool debug;
 private:
@@ -39,7 +40,7 @@ private:
 
 class QueryReads {
 public:
-    QueryReads(std::string& filenameIn, std::string& filenameOut, CommandLineOptions& options);
+    QueryReads(std::string& filenameIn, std::string& filenameOutprefix, CommandLineOptions& options);
     ~QueryReads();
     bool readNext();
     void resetForNextRefSeq();
@@ -59,6 +60,7 @@ private:
     unsigned int minMapLength_;
     float minMapLengthPercent_;
     bool debug_;
+    bool hasQualScores_;
 };
 
 
@@ -85,8 +87,8 @@ int main(int argc, char *argv[])
     mm_set_opt(0, &iopt, &mopt);
     //mopt.flag |= MM_F_CIGAR; // perform alignment
 
-    QueryReads queryReads1(options.readsIn1, options.readsOut1, options);
-    QueryReads queryReads2(options.readsIn2, options.readsOut2, options);
+    QueryReads queryReads1(options.readsIn1, options.readsOutprefix1, options);
+    QueryReads queryReads2(options.readsIn2, options.readsOutprefix2, options);
     Stats stats;
 
     // open index reader
@@ -102,7 +104,7 @@ int main(int argc, char *argv[])
                 if (not queryReads2.readNext()) {
                     std::cerr << "Error reading mate of read '"
                               << queryReads1.readPtr->name.s << "'\n";
-                    exitWithError(66);
+                    exitWithError(67);
                 }
                 stats.readsIn2++;
             }
@@ -138,7 +140,7 @@ int main(int argc, char *argv[])
         std::cerr << "Used all reads from first file, but got another read '"
                   << queryReads2.readPtr->name.s
                   << "' from second reads file\n";
-        exitWithError(67);
+        exitWithError(68);
     }
     mm_idx_reader_close(r); // close the index reader
     stats.toStdout();
@@ -189,25 +191,48 @@ int CommandLineOptions::parseCommandLineOpts(int argc, char *argv[]) {
     app.add_option("--min_map_length_pc", minMapLengthPercent, "Minimum length of match required to keep a read, as a percent of the read length [50.0]");
 
     CLI11_PARSE(app, argc, argv);
-    readsOut1 = outprefix + ".reads_1.fastq.gz";
-    readsOut2 = outprefix + ".reads_2.fastq.gz";
+    if (readsIn2 == "" ) {
+        readsOutprefix1 = outprefix + ".reads";
+        readsOutprefix2 = "";
+    }
+    else {
+        readsOutprefix1 = outprefix + ".reads_1";
+        readsOutprefix2 = outprefix + ".reads_2";
+    }
     return 0;
 }
 
 
-QueryReads::QueryReads(std::string& filenameIn, std::string& filenameOut, CommandLineOptions& options) {
+QueryReads::QueryReads(std::string& filenameIn, std::string& filenameOutprefix, CommandLineOptions& options) {
     if (filenameIn != "") {
         filehandleIn_ = gzopen(filenameIn.c_str(), "r");
-        assert(filehandleIn_);
+        if (!filehandleIn_) {
+            std::cerr << "Error opening input reads file '" << filenameIn << "'\n";
+            exitWithError(65);
+        }
+
+        // We need to know if the reads file is FASTA or FASTQ format.
+        // Decide by: if char of the file being '@' then it's FASTQ, otherwise
+        // it's FASTA
+        std::string filenameOut = filenameOutprefix;
+        if (gzgetc(filehandleIn_) == '@') {
+            hasQualScores_ = true;
+            filenameOut += ".fastq.gz";
+        }
+        else {
+            hasQualScores_ = false;
+            filenameOut += ".fasta.gz";
+        }
+        gzrewind(filehandleIn_);
+
         readPtr = kseq_init(filehandleIn_);
         isBeingUsed = true;
         tbuf_ = mm_tbuf_init();
         filehandleOut_ = gzopen(filenameOut.c_str(), "w");
         if (not filehandleOut_) {
             std::cerr << "Error opening output reads file '" << filenameOut << "'\n";
-            exitWithError(65);
+            exitWithError(66);
         }
-        assert(filehandleOut_);
     }
     else {
         isBeingUsed = false;
@@ -241,7 +266,12 @@ void QueryReads::clearMapping() {
 }
 
 void QueryReads::write() {
-    gzprintf(filehandleOut_, "@%s\n%s\n+\n%s\n", readPtr->name.s, readPtr->seq.s, readPtr->qual.s);
+    if (hasQualScores_) {
+        gzprintf(filehandleOut_, "@%s\n%s\n+\n%s\n", readPtr->name.s, readPtr->seq.s, readPtr->qual.s);
+    }
+    else {
+        gzprintf(filehandleOut_, ">%s\n%s\n", readPtr->name.s, readPtr->seq.s);
+    }
 }
 
 bool QueryReads::isGoodMapping() {
