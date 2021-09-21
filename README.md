@@ -11,7 +11,7 @@ cd src && make
 ## Usage
 Required options:
 1. `--ref_fasta`: reference genome in FASTA format.
-2. `--reads1`: at least one reads file in FASTQ[.GZ] format.
+2. `--reads1`: at least one reads file in FASTA[.GZ] or FASTQ[.GZ] format.
 3. `-o,--outprefix`: prefix of output files.
 
 
@@ -24,6 +24,9 @@ It will output `out.reads.fastq.gz`.
 Run on two files of reads by adding the option `--reads2 reads2.fq.gz` to the
 previous command. It will output `out.reads_1.fastq.gz` and
 `out.reads_2.fastq.gz`.
+
+If the input reads files are in FASTA format, then it will output reads in
+FASTA format, calling the files `*.fasta.*` instead of `*.fastq.*`.
 
 It always writes the counts of input and output reads to `STDOUT` in
 tab-delimited format, for example:
