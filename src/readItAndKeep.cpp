@@ -10,6 +10,9 @@
 #include "kseq.h"
 KSEQ_INIT(gzFile, gzread)
 
+
+const std::string READ_IT_AND_KEEP_VERSION = "0.0.1";
+
 const std::map<unsigned int, std::string> ERRORS = {
     {64, "Error parsing command line options or input file not found"},
     {65, "Error opening reads input file"},
@@ -189,6 +192,12 @@ int CommandLineOptions::parseCommandLineOpts(int argc, char *argv[]) {
     app.add_option("--min_map_length", minMapLength, "Minimum length of match required to keep a read in bp [50]");
 
     app.add_option("--min_map_length_pc", minMapLengthPercent, "Minimum length of match required to keep a read, as a percent of the read length [50.0]");
+
+    app.add_flag_callback("-V,--version", []() {
+        std::cout << "readItAndKeep version " << READ_IT_AND_KEEP_VERSION << std::endl;
+        throw(CLI::Success {});
+        },
+        "Show version and exit");
 
     CLI11_PARSE(app, argc, argv);
     if (readsIn2 == "" ) {
