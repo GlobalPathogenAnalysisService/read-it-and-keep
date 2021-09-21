@@ -19,7 +19,7 @@ Run on one file of reads:
 ```
 readItAndKeep --ref_fasta ref_genome.fasta --reads1 reads1.fq.gz -o out
 ```
-It will output `out.reads_1.fastq.gz`.
+It will output `out.reads.fastq.gz`.
 
 Run on two files of reads by adding the option `--reads2 reads2.fq.gz` to the
 previous command. It will output `out.reads_1.fastq.gz` and
