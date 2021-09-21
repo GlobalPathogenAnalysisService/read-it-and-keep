@@ -37,3 +37,20 @@ Kept reads 1	950
 Kept reads 2	950
 ```
 All logging messages sent to `STDERR`.
+
+
+## Tests
+
+These are under development. To run them you will need:
+1. Python 3
+2. Python package [pytest](https://docs.pytest.org/en/stable/) (`pip install pytest`)
+3. Python package [pyfastaq](https://github.com/sanger-pathogens/Fastaq)  (`pip install pyfastaq`)
+4. [ART read simulator](https://www.niehs.nih.gov/research/resources/software/biostatistics/art/index.cfm)
+   installed, so that `art_illumina` is in your `$PATH`.
+
+Run the tests after compiling the source code, ie:
+```
+cd src
+make
+make test
+```

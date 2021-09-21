@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+
+import os
+import pytest
+import shutil
+import subprocess
+
+import pyfastaq
+
+
+COVID_REF_FASTA = "MN908947.3.fa"
+READ_IT_AND_KEEP = os.path.join(os.pardir, "src", "readItAndKeep")
+ART_ILLUMINA = "art_illumina"
+assert shutil.which(READ_IT_AND_KEEP) is not None
+assert shutil.which(ART_ILLUMINA) is not None
+
+
+def run_read_it_and_keep(reads_files, outprefix):
+    assert 1 <= len(reads_files) <= 2
+    reads = " ".join([f"--reads{i+1} " + f for i, f in enumerate(reads_files)])
+    command = f"{READ_IT_AND_KEEP} --ref_fasta {COVID_REF_FASTA} {reads} -o {outprefix} > {outprefix}.out"
+    subprocess.check_output(command, shell=True)
+    results = {}
+    with open(f"{outprefix}.out") as f:
+        for line in f:
+            key, val = line.rstrip().split("\t")
+            assert key not in results
+            results[key] = int(val)
+    return results
+
+
+def shred_ref_genome(outfile, k):
+    seqs = {}
+    pyfastaq.tasks.file_to_dict(COVID_REF_FASTA, seqs)
+    assert len(seqs) == 1
+    ref = list(seqs.values())[0]
+    k = 75
+    with open(outfile, "w") as f:
+        for i in range(len(ref)):
+            end = i + k - 1
+            if end > len(ref) - 1:
+                break
+            print(f">{i+1}.{end+1}", file=f)
+            print(ref[i: end+1], file=f)
+
+
+def simulate_illumina(outprefix):
+    machine = "HS25"  # This is HiSeq 2500 (125bp, 150bp)
+    read_length = 150
+    read_depth = 10
+    mean_fragment_length = 250
+    fragment_length_sd = 10
+    command = " ".join(
+        [
+            ART_ILLUMINA,
+            "--in",
+            COVID_REF_FASTA,
+            "--out",
+            outprefix,
+            "--noALN",  # do not output alignment file
+            "--seqSys",
+            machine,
+            "--len",
+            str(read_length),
+            "--fcov",
+            str(read_depth),
+            "--mflen",
+            str(mean_fragment_length),
+            "--sdev",
+            str(fragment_length_sd),
+            "--rndSeed 42",
+        ]
+    ).rstrip()
+    subprocess.check_output(command, shell=True)
+
+
+def test_shredded_ref_genome():
+    outprefix = "out.shredded_ref_genome"
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+    shred_length = 75
+    shredded_ref = f"{outprefix}.k-{shred_length}.fa"
+    shred_ref_genome(shredded_ref, shred_length)
+    riak_out = f"{outprefix}.riak"
+    riak_counts = run_read_it_and_keep([shredded_ref], riak_out)
+    number_of_reads = 29829
+    assert riak_counts["Input reads file 1"] == number_of_reads
+    assert riak_counts["Input reads file 2"] == 0
+    assert riak_counts["Kept reads 1"] == number_of_reads
+    assert riak_counts["Kept reads 2"] == 0
+    reads_out = f"{riak_out}.reads.fasta.gz"
+    assert os.path.exists(reads_out)
+    assert pyfastaq.tasks.count_sequences(reads_out) == number_of_reads
+    # check it didn't make output reads files that would only be made when
+    # there were two input files
+    reads_out_1 = f"{riak_out}.reads_1.fasta.gz"
+    assert not os.path.exists(reads_out_1)
+    reads_out_2 = f"{riak_out}.reads_2.fasta.gz"
+    assert not os.path.exists(reads_out_2)
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+
+
+def test_illumina_hiseq_sim():
+    outprefix = "out.illumina_hiseq_sim"
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+    illumina_read_prefix = f"{outprefix}.reads"
+    simulate_illumina(illumina_read_prefix)
+    illumina_1 = f"{illumina_read_prefix}1.fq"
+    illumina_2 = f"{illumina_read_prefix}2.fq"
+    riak_out = f"{outprefix}.riak"
+    riak_counts = run_read_it_and_keep([illumina_1, illumina_2], riak_out)
+    number_of_reads = 995
+    assert riak_counts["Input reads file 1"] == number_of_reads
+    assert riak_counts["Input reads file 2"] == number_of_reads
+    assert riak_counts["Kept reads 1"] == number_of_reads
+    assert riak_counts["Kept reads 2"] == number_of_reads
+    reads_out_1 = f"{riak_out}.reads_1.fastq.gz"
+    assert os.path.exists(reads_out_1)
+    assert pyfastaq.tasks.count_sequences(reads_out_1) == number_of_reads
+    reads_out_2 = f"{riak_out}.reads_2.fastq.gz"
+    assert os.path.exists(reads_out_2)
+    assert pyfastaq.tasks.count_sequences(reads_out_2) == number_of_reads
+    # check it didn't make output read file that would be made if input
+    # was only one file
+    reads_out = f"{riak_out}.reads.fasta.gz"
+    assert not os.path.exists(reads_out)
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)

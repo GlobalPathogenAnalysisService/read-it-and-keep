@@ -10,3 +10,6 @@ readItAndKeep: ../minimap2-$(MINIMAP2_VERSION)/libminimap2.a
 clean:
 	$(RM) readItAndKeep
 	$(MAKE) -C ../minimap2-$(MINIMAP2_VERSION) clean
+
+test:
+	cd ../tests && pytest
