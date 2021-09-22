@@ -46,7 +46,8 @@ These are under development. To run them you will need:
 2. Python package [pytest](https://docs.pytest.org/en/stable/) (`pip install pytest`)
 3. Python package [pyfastaq](https://github.com/sanger-pathogens/Fastaq)  (`pip install pyfastaq`)
 4. [ART read simulator](https://www.niehs.nih.gov/research/resources/software/biostatistics/art/index.cfm)
-   installed, so that `art_illumina` is in your `$PATH`.
+   installed, so that `art_illumina` is in your `$PATH`
+5. [badread](https://github.com/rrwick/Badread) for nanopore read simulation.
 
 Run the tests after compiling the source code, ie:
 ```

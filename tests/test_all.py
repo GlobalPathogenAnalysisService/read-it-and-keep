@@ -15,10 +15,10 @@ assert shutil.which(READ_IT_AND_KEEP) is not None
 assert shutil.which(ART_ILLUMINA) is not None
 
 
-def run_read_it_and_keep(reads_files, outprefix):
+def run_read_it_and_keep(reads_files, outprefix, tech):
     assert 1 <= len(reads_files) <= 2
     reads = " ".join([f"--reads{i+1} " + f for i, f in enumerate(reads_files)])
-    command = f"{READ_IT_AND_KEEP} --ref_fasta {COVID_REF_FASTA} {reads} -o {outprefix} > {outprefix}.out"
+    command = f"{READ_IT_AND_KEEP} --debug --tech {tech} --ref_fasta {COVID_REF_FASTA} {reads} -o {outprefix} > {outprefix}.out"
     subprocess.check_output(command, shell=True)
     results = {}
     with open(f"{outprefix}.out") as f:
@@ -42,6 +42,21 @@ def shred_ref_genome(outfile, k):
                 break
             print(f">{i+1}.{end+1}", file=f)
             print(ref[i: end+1], file=f)
+
+
+def simulate_nanopore(outfile, coverage=10, read_length_stdev="15000,13000"):
+    """Uses 'badread' to simulate nanopore reads. The default read_length_stdev
+    for this function is the same as the default for badread."""
+    coverage = 10
+    command = " ".join([
+        "badread simulate",
+        "--seed 42",
+        "--reference", COVID_REF_FASTA,
+        "--quantity", f"{coverage}x",
+        "--length", read_length_stdev,
+        ">", outfile
+    ])
+    subprocess.check_output(command, shell=True)
 
 
 def simulate_illumina(outprefix):
@@ -70,7 +85,7 @@ def simulate_illumina(outprefix):
             str(fragment_length_sd),
             "--rndSeed 42",
         ]
-    ).rstrip()
+    )
     subprocess.check_output(command, shell=True)
 
 
@@ -81,7 +96,7 @@ def test_shredded_ref_genome():
     shredded_ref = f"{outprefix}.k-{shred_length}.fa"
     shred_ref_genome(shredded_ref, shred_length)
     riak_out = f"{outprefix}.riak"
-    riak_counts = run_read_it_and_keep([shredded_ref], riak_out)
+    riak_counts = run_read_it_and_keep([shredded_ref], riak_out, "illumina")
     number_of_reads = 29829
     assert riak_counts["Input reads file 1"] == number_of_reads
     assert riak_counts["Input reads file 2"] == 0
@@ -107,7 +122,7 @@ def test_illumina_hiseq_sim():
     illumina_1 = f"{illumina_read_prefix}1.fq"
     illumina_2 = f"{illumina_read_prefix}2.fq"
     riak_out = f"{outprefix}.riak"
-    riak_counts = run_read_it_and_keep([illumina_1, illumina_2], riak_out)
+    riak_counts = run_read_it_and_keep([illumina_1, illumina_2], riak_out, "illumina")
     number_of_reads = 995
     assert riak_counts["Input reads file 1"] == number_of_reads
     assert riak_counts["Input reads file 2"] == number_of_reads
@@ -124,3 +139,24 @@ def test_illumina_hiseq_sim():
     reads_out = f"{riak_out}.reads.fasta.gz"
     assert not os.path.exists(reads_out)
     subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+
+def test_nanopore_sim_default():
+    outprefix = "out.nanopore_sim_default"
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+    nano_reads = f"{outprefix}.reads.fq"
+    simulate_nanopore(nano_reads)
+    number_of_input_reads = 35
+    assert pyfastaq.tasks.count_sequences(nano_reads) == number_of_input_reads
+    riak_out = f"{outprefix}.riak"
+    riak_counts = run_read_it_and_keep([nano_reads], riak_out, "ont")
+    reads_out = f"{riak_out}.reads.fastq.gz"
+    # Three reads get rejected, which are short and/or very low quality.
+    number_of_output_reads = 32
+    assert os.path.exists(reads_out)
+    assert pyfastaq.tasks.count_sequences(reads_out) == number_of_output_reads
+    assert riak_counts["Input reads file 1"] == number_of_input_reads
+    assert riak_counts["Input reads file 2"] == 0
+    assert riak_counts["Kept reads 1"] == number_of_output_reads
+    assert riak_counts["Kept reads 2"] == 0
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+
