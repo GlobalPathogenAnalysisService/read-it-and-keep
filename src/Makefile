@@ -1,18 +1,21 @@
+EXT_DIR = ext
 MINIMAP2_VERSION = 2.22
+MINIMAP2_DIR = $(EXT_DIR)/minimap2-$(MINIMAP2_VERSION)
+GZSTREAM_DIR = $(EXT_DIR)/gzstream
 
-readItAndKeep: ../minimap2-$(MINIMAP2_VERSION)/libminimap2.a
-	g++ -Wall -O2 -I../minimap2-$(MINIMAP2_VERSION)/ -I../gzstream/  -pthread -O2 readItAndKeep.cpp ../minimap2-$(MINIMAP2_VERSION)/libminimap2.a ../gzstream/libgzstream.a -lz -lm -o readItAndKeep
+readItAndKeep: $(MINIMAP2_DIR)/libminimap2.a
+	g++ -Wall -O2 -I$(MINIMAP2_DIR)/ -I$(GZSTREAM_DIR)  -pthread -O2 readItAndKeep.cpp $(MINIMAP2_DIR)/libminimap2.a $(GZSTREAM_DIR)/libgzstream.a -lz -lm -o readItAndKeep
 
-../gzstream/libgzstream.a :
-	$(MAKE) -C ../gzstream/
+$(GZSTREAM_DIR)/libgzstream.a :
+	$(MAKE) -C $(GZSTREAM_DIR)
 
-../minimap2-$(MINIMAP2_VERSION)/libminimap2.a:
-	$(MAKE) -C ../minimap2-$(MINIMAP2_VERSION)
+$(MINIMAP2_DIR)/libminimap2.a:
+	$(MAKE) -C $(MINIMAP2_DIR)
 
 clean:
 	$(RM) readItAndKeep
-	$(MAKE) -C ../minimap2-$(MINIMAP2_VERSION) clean
-	$(MAKE) -C ../gzstream/ clean
+	$(MAKE) -C $(MINIMAP2_DIR) clean
+	$(MAKE) -C $(GZSTREAM_DIR) clean
 
 test:
 	cd ../tests && pytest
