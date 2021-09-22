@@ -6,6 +6,7 @@
 #include <string>
 #include <unordered_map>
 #include <zlib.h>
+#include "gzstream.h"
 #include "minimap.h"
 #include "kseq.h"
 KSEQ_INIT(gzFile, gzread)
@@ -50,13 +51,15 @@ public:
     void map(mm_idx_t* mi, mm_mapopt_t& mopt);
     void clearMapping();
     void write();
+    void writeDebug();
     bool isGoodMapping();
     kseq_t* readPtr;
     bool isBeingUsed;
 
 private:
     gzFile filehandleIn_;
-    gzFile filehandleOut_;
+    ogzstream filehandleOut_;
+    std::ofstream filehandleDebugOut_;
     mm_reg1_t* reg_;
     int n_reg_;
     mm_tbuf_t* tbuf_;
@@ -103,6 +106,7 @@ int main(int argc, char *argv[])
         queryReads2.resetForNextRefSeq();
         while (queryReads1.readNext()) {
             stats.readsIn1++;
+            bool keptReads = false;
             if (queryReads2.isBeingUsed) {
                 if (not queryReads2.readNext()) {
                     std::cerr << "Error reading mate of read '"
@@ -114,6 +118,7 @@ int main(int argc, char *argv[])
             queryReads1.map(mi, mopt);
             if (queryReads1.isGoodMapping()) {
                 queryReads1.write();
+                keptReads = true;
                 stats.readsKept1++;
                 if (queryReads2.isBeingUsed) {
                     queryReads2.write();
@@ -123,8 +128,9 @@ int main(int argc, char *argv[])
             else if (queryReads2.isBeingUsed) {
                 queryReads2.map(mi, mopt);
                 if (queryReads2.isGoodMapping()) {
+                    queryReads1.write();
                     queryReads2.write();
-                    queryReads2.write();
+                    keptReads = true;
                     stats.readsKept1++;
                     stats.readsKept2++;
                 }
@@ -132,6 +138,10 @@ int main(int argc, char *argv[])
             }
 
             queryReads1.clearMapping();
+            if (not keptReads) {
+                   queryReads1.writeDebug();
+                   queryReads2.writeDebug();
+            }
 
             if (stats.readsIn1 % 100000 == 0) {
                 std::cerr << "Read " << stats.readsIn1 << " read (pairs)" << std::endl;
@@ -237,7 +247,7 @@ QueryReads::QueryReads(std::string& filenameIn, std::string& filenameOutprefix, 
         readPtr = kseq_init(filehandleIn_);
         isBeingUsed = true;
         tbuf_ = mm_tbuf_init();
-        filehandleOut_ = gzopen(filenameOut.c_str(), "w");
+        filehandleOut_.open(filenameOut.c_str());
         if (not filehandleOut_) {
             std::cerr << "Error opening output reads file '" << filenameOut << "'\n";
             exitWithError(66);
@@ -249,6 +259,14 @@ QueryReads::QueryReads(std::string& filenameIn, std::string& filenameOutprefix, 
     minMapLength_ = options.minMapLength;
     minMapLengthPercent_ = options.minMapLengthPercent;
     debug_ = options.debug;
+    if (isBeingUsed and debug_) {
+        std::string filename = filenameOutprefix + ".debug";
+        filehandleDebugOut_.open(filename);
+        if (not filehandleDebugOut_.is_open()) {
+            std::cerr << "Error opening debug output file '" << filename << "'\n";
+            exitWithError(66);
+        }
+    }
 }
 
 void QueryReads::resetForNextRefSeq() {
@@ -276,22 +294,41 @@ void QueryReads::clearMapping() {
 
 void QueryReads::write() {
     if (hasQualScores_) {
-        gzprintf(filehandleOut_, "@%s\n%s\n+\n%s\n", readPtr->name.s, readPtr->seq.s, readPtr->qual.s);
+        filehandleOut_ << '@' << readPtr->name.s << '\n'
+                       << readPtr->seq.s << '\n'
+                       << "+\n"
+                       << readPtr->qual.s << '\n';
     }
     else {
-        gzprintf(filehandleOut_, ">%s\n%s\n", readPtr->name.s, readPtr->seq.s);
+        filehandleOut_ << '>' << readPtr->name.s << '\n'
+                       << readPtr->seq.s << '\n';
     }
 }
 
+
+void QueryReads::writeDebug() {
+    if (not isBeingUsed) {
+        return;
+    }
+    filehandleDebugOut_ << "REJECTED_READ\t" << readPtr->name.s
+                        << '\t' << readPtr->seq.s
+                        << '\t' << readPtr->qual.s << '\n';
+}
+
+
 bool QueryReads::isGoodMapping() {
     int j;
+    if (debug_) {
+        filehandleDebugOut_ << "MAPPING_COUNT\t" << readPtr->name.s
+                            << '\t' << n_reg_ << '\n';
+    }
     for (j = 0; j < n_reg_; ++j) {
         mm_reg1_t *r = &reg_[j];
         //assert(r->p); // with MM_F_CIGAR, this should not be NULL
         // note: regardless of the strand, we always have query start < end
         bool ok = (minMapLength_ <= (unsigned int) (r->qe - r->qs) or minMapLengthPercent_ <= 100.0 * (r->qe - r->qs) / readPtr->seq.l);
         if (debug_) {
-            std::cout << "DEBUG map " << readPtr->name.s
+            filehandleDebugOut_ << "MAPPING\t" << readPtr->name.s
                        << '\t' << r->qs << "-" << r->qe
                        << '\t' << "+-"[r->rev]
                        << "\tpass:" << ok << '\n';
@@ -307,9 +344,12 @@ bool QueryReads::isGoodMapping() {
 QueryReads::~QueryReads() {
     if (isBeingUsed) {
         gzclose(filehandleIn_);
-        gzclose(filehandleOut_);
+        filehandleOut_.close();
         kseq_destroy(readPtr);
         mm_tbuf_destroy(tbuf_);
+        if (debug_) {
+            filehandleDebugOut_.close();
+        }
     }
 }
 
