@@ -36,6 +36,7 @@ public:
     std::string readsOutprefix1;
     std::string readsOutprefix2;
     std::string outprefix;
+    std::string tech;
     bool debug;
 private:
     int parseCommandLineOpts(int argc, char *argv[]);
@@ -91,6 +92,13 @@ int main(int argc, char *argv[])
 
     mm_verbose = 2; // disable message output to stderr
     mm_set_opt(0, &iopt, &mopt);
+    if (options.tech == "illumina") {
+        mm_set_opt("sr", &iopt, &mopt);
+    }
+    else if (options.tech == "ont") {
+        mm_set_opt("map-ont", &iopt, &mopt);
+    }
+
     //mopt.flag |= MM_F_CIGAR; // perform alignment
 
     QueryReads queryReads1(options.readsIn1, options.readsOutprefix1, options);
@@ -165,6 +173,7 @@ CommandLineOptions::CommandLineOptions(int argc, char *argv[]) {
     minMapLengthPercent = 50.0;
     refFasta = "";
     debug = false;
+    tech = "illumina";
     auto code = this->parseCommandLineOpts(argc, argv);
     if (code != 0) { // error parsing command line options
         exitWithError(64);
@@ -182,6 +191,8 @@ void exitWithError(unsigned int errorCode) {
 
 int CommandLineOptions::parseCommandLineOpts(int argc, char *argv[]) {
     CLI::App app{};
+
+    app.add_option("--tech", tech, "Sequencing technology, must be 'illumina' or 'ont' [illumina]");
 
     app.add_option("--ref_fasta", refFasta, "Reference genome FASTA filename")
         ->required()
@@ -210,6 +221,13 @@ int CommandLineOptions::parseCommandLineOpts(int argc, char *argv[]) {
         "Show version and exit");
 
     CLI11_PARSE(app, argc, argv);
+
+    if (tech != "illumina" and tech != "ont") {
+        std::cerr << "--tech option must be 'illumina' or 'ont', I got: '"
+                  << tech << "'\n";
+        exitWithError(64);
+    }
+
     if (readsIn2 == "" ) {
         readsOutprefix1 = outprefix + ".reads";
         readsOutprefix2 = "";
