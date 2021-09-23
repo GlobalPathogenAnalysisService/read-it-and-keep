@@ -2,11 +2,22 @@
 Read contamination removal.
 
 
-## Compile
+## Install
+Install either from source or build a singularity container.
+
+### Compile from source
 Make the executable `src/readItAndKeep` by running:
 ```
 cd src && make
 ```
+
+### Singularity container
+Build a singularity container by cloning this repository
+and running:
+```
+sudo singularity build readItAndKeep.sif Singularity.def
+```
+
 
 ## Usage
 Required options:

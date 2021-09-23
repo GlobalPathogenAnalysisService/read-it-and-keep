@@ -1,0 +1,26 @@
+BootStrap: debootstrap
+OSVersion: focal
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%environment
+export PATH=/bioinf-tools:$PATH
+
+
+%setup
+    mkdir $SINGULARITY_ROOTFS/readItAndKeep
+    rsync -a .ci/install_dependencies.sh src tests $SINGULARITY_ROOTFS/readItAndKeep
+
+
+%post
+    #_____________________ setup $PATH _______________________#
+    export PATH=/bioinf-tools/:$PATH
+
+    /readItAndKeep/install_dependencies.sh /bioinf-tools
+    cd /readItAndKeep/src
+    make
+    make test
+    cd /bioinf-tools
+    cp -s /readItAndKeep/src/readItAndKeep .
+
+%runscript
+    readItAndKeep "$@"
