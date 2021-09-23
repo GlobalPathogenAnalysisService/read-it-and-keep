@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
             }
 
             if (stats.readsIn1 % 100000 == 0) {
-                std::cerr << "Read " << stats.readsIn1 << " read (pairs)" << std::endl;
+                std::cerr << "Processed " << stats.readsIn1 << " reads (or read pairs)" << std::endl;
             }
         }
         mm_idx_destroy(mi);
