@@ -312,14 +312,21 @@ void QueryReads::clearMapping() {
 
 void QueryReads::write() {
     if (hasQualScores_) {
-        filehandleOut_ << '@' << readPtr->name.s << '\n'
+        filehandleOut_ << '@' << readPtr->name.s;
+        if (readPtr->comment.l > 0) {
+            filehandleOut_ << ' ' << readPtr->comment.s;
+        }
+        filehandleOut_ << '\n'
                        << readPtr->seq.s << '\n'
                        << "+\n"
                        << readPtr->qual.s << '\n';
     }
     else {
-        filehandleOut_ << '>' << readPtr->name.s << '\n'
-                       << readPtr->seq.s << '\n';
+        filehandleOut_ << '>' << readPtr->name.s;
+        if (readPtr->comment.l > 0) {
+            filehandleOut_ << ' ' << readPtr->comment.s;
+        }
+        filehandleOut_ << readPtr->seq.s << '\n';
     }
 }
 
@@ -329,6 +336,7 @@ void QueryReads::writeDebug() {
         return;
     }
     filehandleDebugOut_ << "REJECTED_READ\t" << readPtr->name.s
+                        << '\t' << readPtr->comment.s
                         << '\t' << readPtr->seq.s
                         << '\t' << readPtr->qual.s << '\n';
 }
@@ -338,6 +346,7 @@ bool QueryReads::isGoodMapping() {
     int j;
     if (debug_) {
         filehandleDebugOut_ << "MAPPING_COUNT\t" << readPtr->name.s
+                            << '\t' << readPtr->comment.s
                             << '\t' << n_reg_ << '\n';
     }
     for (j = 0; j < n_reg_; ++j) {
@@ -347,6 +356,7 @@ bool QueryReads::isGoodMapping() {
         bool ok = (minMapLength_ <= (unsigned int) (r->qe - r->qs) or minMapLengthPercent_ <= 100.0 * (r->qe - r->qs) / readPtr->seq.l);
         if (debug_) {
             filehandleDebugOut_ << "MAPPING\t" << readPtr->name.s
+                       << '\t' << readPtr->comment.s
                        << '\t' << r->qs << "-" << r->qe
                        << '\t' << "+-"[r->rev]
                        << "\tpass:" << ok << '\n';
