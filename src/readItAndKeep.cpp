@@ -326,7 +326,7 @@ void QueryReads::write() {
         if (readPtr->comment.l > 0) {
             filehandleOut_ << ' ' << readPtr->comment.s;
         }
-        filehandleOut_ << readPtr->seq.s << '\n';
+        filehandleOut_ << '\n' << readPtr->seq.s << '\n';
     }
 }
 
