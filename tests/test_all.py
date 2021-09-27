@@ -15,6 +15,27 @@ assert shutil.which(READ_IT_AND_KEEP) is not None
 assert shutil.which(ART_ILLUMINA) is not None
 
 
+def riak_debug_check_badreads_failed_reads_ok(debug_file, identity_cutoff=86):
+    with open(debug_file) as f:
+        for line in f:
+            if not line.startswith("REJECTED_READ\t"):
+                continue
+
+            description = line.split("\t")[2]
+            if description.startswith("junk_seq") or description.startswith("random_seq"):
+                continue
+
+            # description example:
+            # MN908947.3,-strand,26462-27502 length=971 error-free_length=1060 read_identity=70.47%
+            read_identity = description.split()[-1]
+            assert read_identity.startswith("read_identity=")
+            percent_identity = float(read_identity.split("=")[-1].strip("%"))
+            if percent_identity > identity_cutoff:
+                return False
+
+    return True
+
+
 def run_read_it_and_keep(reads_files, outprefix, tech):
     assert 1 <= len(reads_files) <= 2
     reads = " ".join([f"--reads{i+1} " + f for i, f in enumerate(reads_files)])
@@ -140,6 +161,7 @@ def test_illumina_hiseq_sim():
     assert not os.path.exists(reads_out)
     subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
 
+
 def test_nanopore_sim_default():
     outprefix = "out.nanopore_sim_default"
     subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
@@ -150,9 +172,30 @@ def test_nanopore_sim_default():
     riak_out = f"{outprefix}.riak"
     riak_counts = run_read_it_and_keep([nano_reads], riak_out, "ont")
     reads_out = f"{riak_out}.reads.fastq.gz"
-    # Three reads get rejected, which are short and/or very low quality.
     number_of_output_reads = 32
     assert os.path.exists(reads_out)
+    assert riak_debug_check_badreads_failed_reads_ok(f"{riak_out}.reads.debug")
+    assert pyfastaq.tasks.count_sequences(reads_out) == number_of_output_reads
+    assert riak_counts["Input reads file 1"] == number_of_input_reads
+    assert riak_counts["Input reads file 2"] == 0
+    assert riak_counts["Kept reads 1"] == number_of_output_reads
+    assert riak_counts["Kept reads 2"] == 0
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+
+
+def test_nanopore_sim_1k_reads():
+    outprefix = "out.nanopore_sim_1k_reads"
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+    nano_reads = f"{outprefix}.reads.fq"
+    simulate_nanopore(nano_reads, read_length_stdev="1000,50")
+    number_of_input_reads = 301
+    assert pyfastaq.tasks.count_sequences(nano_reads) == number_of_input_reads
+    riak_out = f"{outprefix}.riak"
+    riak_counts = run_read_it_and_keep([nano_reads], riak_out, "ont")
+    reads_out = f"{riak_out}.reads.fastq.gz"
+    number_of_output_reads = 282
+    assert os.path.exists(reads_out)
+    assert riak_debug_check_badreads_failed_reads_ok(f"{riak_out}.reads.debug")
     assert pyfastaq.tasks.count_sequences(reads_out) == number_of_output_reads
     assert riak_counts["Input reads file 1"] == number_of_input_reads
     assert riak_counts["Input reads file 2"] == 0
