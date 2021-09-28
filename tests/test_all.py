@@ -15,13 +15,14 @@ assert shutil.which(READ_IT_AND_KEEP) is not None
 assert shutil.which(ART_ILLUMINA) is not None
 
 
-def riak_debug_check_badreads_failed_reads_ok(debug_file, identity_cutoff=86):
+def riak_debug_check_badreads_failed_reads_ok(debug_file, identity_cutoff=87, min_length=50):
     with open(debug_file) as f:
         for line in f:
             if not line.startswith("REJECTED_READ\t"):
                 continue
 
-            description = line.split("\t")[2]
+            _, _, description, seq, _ = line.rstrip().split("\t")
+            #description = line.split("\t")[2]
             if description.startswith("junk_seq") or description.startswith("random_seq"):
                 continue
 
@@ -30,8 +31,10 @@ def riak_debug_check_badreads_failed_reads_ok(debug_file, identity_cutoff=86):
             read_identity = description.split()[-1]
             assert read_identity.startswith("read_identity=")
             percent_identity = float(read_identity.split("=")[-1].strip("%"))
-            if percent_identity > identity_cutoff:
+            if percent_identity > identity_cutoff and len(seq) >= min_length:
+                print("REJECT FAIL:", line)
                 return False
+
 
     return True
 
@@ -65,14 +68,14 @@ def shred_ref_genome(outfile, k):
             print(ref[i: end+1], file=f)
 
 
-def simulate_nanopore(outfile, coverage=10, read_length_stdev="15000,13000"):
+def simulate_nanopore(outfile, coverage=10, read_length_stdev="15000,13000", ref=COVID_REF_FASTA):
     """Uses 'badread' to simulate nanopore reads. The default read_length_stdev
     for this function is the same as the default for badread."""
     coverage = 10
     command = " ".join([
         "badread simulate",
         "--seed 42",
-        "--reference", COVID_REF_FASTA,
+        "--reference", ref,
         "--quantity", f"{coverage}x",
         "--length", read_length_stdev,
         ">", outfile
@@ -80,7 +83,7 @@ def simulate_nanopore(outfile, coverage=10, read_length_stdev="15000,13000"):
     subprocess.check_output(command, shell=True)
 
 
-def simulate_illumina(outprefix):
+def simulate_illumina(outprefix, ref=COVID_REF_FASTA):
     machine = "HS25"  # This is HiSeq 2500 (125bp, 150bp)
     read_length = 150
     read_depth = 10
@@ -90,7 +93,7 @@ def simulate_illumina(outprefix):
         [
             ART_ILLUMINA,
             "--in",
-            COVID_REF_FASTA,
+            ref,
             "--out",
             outprefix,
             "--noALN",  # do not output alignment file
@@ -108,6 +111,21 @@ def simulate_illumina(outprefix):
         ]
     )
     subprocess.check_output(command, shell=True)
+
+
+def make_ref_genome_with_deletion(outfile, del_start, del_end, keep_start, keep_end):
+    """Writes a FASTA file of the covid reference genome, but with positions
+    del_start to del_end inclusive deleted. Only writes out the part of the
+    genome from keep_start to keep_end - we only really care about testing if
+    reads that contain the deletion are kept by readItAndKeep.
+    Coordinates are 1-based."""
+    seqs = {}
+    pyfastaq.tasks.file_to_dict(COVID_REF_FASTA, seqs)
+    assert len(seqs) == 1
+    ref = list(seqs.values())[0]
+    ref.seq = ref[keep_start - 1:del_start - 1] + ref[del_end:keep_end]
+    with open(outfile, "w") as f:
+        print(ref, file=f)
 
 
 def test_shredded_ref_genome():
@@ -201,5 +219,67 @@ def test_nanopore_sim_1k_reads():
     assert riak_counts["Input reads file 2"] == 0
     assert riak_counts["Kept reads 1"] == number_of_output_reads
     assert riak_counts["Kept reads 2"] == 0
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+
+
+# The next tests is a deletion that is seen in real samples. This is a
+# good summary of known deletions, and has the coordinates to use:
+# https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7577707/
+# We will simulate reads from the covid reference with the deletion added,
+# and check that readItAndKeep keeps the reads.
+
+# "Delta 382" deletion is deletion from 27848 to 28229. It's the longest
+# deletion in that paper.
+def test_delta_382_deletion():
+    outprefix = "out.delta_382_deletion"
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+    sim_reads_fasta = f"{outprefix}.for_reads.fa"
+    make_ref_genome_with_deletion(sim_reads_fasta, 27848, 28229, 26848, 29229)
+
+    nano_reads = f"{outprefix}.reads.fq"
+    simulate_nanopore(nano_reads, read_length_stdev="1000,50", ref=sim_reads_fasta)
+    number_of_input_reads = 32
+    assert pyfastaq.tasks.count_sequences(nano_reads) == number_of_input_reads
+    riak_out = f"{outprefix}.riak"
+    riak_counts = run_read_it_and_keep([nano_reads], riak_out, "ont")
+    reads_out = f"{riak_out}.reads.fastq.gz"
+    # Some short reads/low % identity reads are not kept. This is ok. Their descriptions are:
+    # MN908947.3,+strand,1807-2703 length=219 error-free_length=220 read_identity=86.83%
+    # MN908947.3,-strand,1946-3027 length=78 error-free_length=80 read_identity=86.46%
+    # MN908947.3,+strand,1721-2636 length=286 error-free_length=314 read_identity=73.39%
+    # MN908947.3,+strand,1985-2995 length=36 error-free_length=38 read_identity=90.57%
+    # junk_seq length=997 error-free_length=1022 read_identity=83.73%
+    # MN908947.3,+strand,5-982 length=922 error-free_length=980 read_identity=76.17%
+
+    number_of_output_reads = 26
+    assert os.path.exists(reads_out)
+    assert riak_debug_check_badreads_failed_reads_ok(f"{riak_out}.reads.debug")
+    assert pyfastaq.tasks.count_sequences(reads_out) == number_of_output_reads
+    assert riak_counts["Input reads file 1"] == number_of_input_reads
+    assert riak_counts["Input reads file 2"] == 0
+    assert riak_counts["Kept reads 1"] == number_of_output_reads
+    assert riak_counts["Kept reads 2"] == 0
+    subprocess.check_output(f"rm -rf {nano_reads} {reads_out} {riak_out}*", shell=True)
+
+    illumina_read_prefix = f"{outprefix}.reads"
+    simulate_illumina(illumina_read_prefix, ref=sim_reads_fasta)
+    illumina_1 = f"{illumina_read_prefix}1.fq"
+    illumina_2 = f"{illumina_read_prefix}2.fq"
+    riak_counts = run_read_it_and_keep([illumina_1, illumina_2], riak_out, "illumina")
+    number_of_reads = 65
+    assert riak_counts["Input reads file 1"] == number_of_reads
+    assert riak_counts["Input reads file 2"] == number_of_reads
+    assert riak_counts["Kept reads 1"] == number_of_reads
+    assert riak_counts["Kept reads 2"] == number_of_reads
+    reads_out_1 = f"{riak_out}.reads_1.fastq.gz"
+    assert os.path.exists(reads_out_1)
+    assert pyfastaq.tasks.count_sequences(reads_out_1) == number_of_reads
+    reads_out_2 = f"{riak_out}.reads_2.fastq.gz"
+    assert os.path.exists(reads_out_2)
+    assert pyfastaq.tasks.count_sequences(reads_out_2) == number_of_reads
+    # check it didn't make output read file that would be made if input
+    # was only one file
+    reads_out = f"{riak_out}.reads.fasta.gz"
+    assert not os.path.exists(reads_out)
     subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
 
