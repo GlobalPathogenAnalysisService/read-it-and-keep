@@ -15,15 +15,19 @@ assert shutil.which(READ_IT_AND_KEEP) is not None
 assert shutil.which(ART_ILLUMINA) is not None
 
 
-def riak_debug_check_badreads_failed_reads_ok(debug_file, identity_cutoff=87, min_length=50):
+def riak_debug_check_badreads_failed_reads_ok(
+    debug_file, identity_cutoff=87, min_length=50
+):
     with open(debug_file) as f:
         for line in f:
             if not line.startswith("REJECTED_READ\t"):
                 continue
 
             _, _, description, seq, _ = line.rstrip().split("\t")
-            #description = line.split("\t")[2]
-            if description.startswith("junk_seq") or description.startswith("random_seq"):
+            # description = line.split("\t")[2]
+            if description.startswith("junk_seq") or description.startswith(
+                "random_seq"
+            ):
                 continue
 
             # description example:
@@ -34,7 +38,6 @@ def riak_debug_check_badreads_failed_reads_ok(debug_file, identity_cutoff=87, mi
             if percent_identity > identity_cutoff and len(seq) >= min_length:
                 print("REJECT FAIL:", line)
                 return False
-
 
     return True
 
@@ -65,21 +68,29 @@ def shred_ref_genome(outfile, k):
             if end > len(ref) - 1:
                 break
             print(f">{i+1}.{end+1}", file=f)
-            print(ref[i: end+1], file=f)
+            print(ref[i : end + 1], file=f)
 
 
-def simulate_nanopore(outfile, coverage=10, read_length_stdev="15000,13000", ref=COVID_REF_FASTA):
+def simulate_nanopore(
+    outfile, coverage=10, read_length_stdev="15000,13000", ref=COVID_REF_FASTA
+):
     """Uses 'badread' to simulate nanopore reads. The default read_length_stdev
     for this function is the same as the default for badread."""
     coverage = 10
-    command = " ".join([
-        "badread simulate",
-        "--seed 42",
-        "--reference", ref,
-        "--quantity", f"{coverage}x",
-        "--length", read_length_stdev,
-        ">", outfile
-    ])
+    command = " ".join(
+        [
+            "badread simulate",
+            "--seed 42",
+            "--reference",
+            ref,
+            "--quantity",
+            f"{coverage}x",
+            "--length",
+            read_length_stdev,
+            ">",
+            outfile,
+        ]
+    )
     subprocess.check_output(command, shell=True)
 
 
@@ -123,7 +134,7 @@ def make_ref_genome_with_deletion(outfile, del_start, del_end, keep_start, keep_
     pyfastaq.tasks.file_to_dict(COVID_REF_FASTA, seqs)
     assert len(seqs) == 1
     ref = list(seqs.values())[0]
-    ref.seq = ref[keep_start - 1:del_start - 1] + ref[del_end:keep_end]
+    ref.seq = ref[keep_start - 1 : del_start - 1] + ref[del_end:keep_end]
     with open(outfile, "w") as f:
         print(ref, file=f)
 
@@ -282,4 +293,3 @@ def test_delta_382_deletion():
     reads_out = f"{riak_out}.reads.fasta.gz"
     assert not os.path.exists(reads_out)
     subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
-
