@@ -25,19 +25,22 @@ Required options:
 2. `--reads1`: at least one reads file in FASTA[.GZ] or FASTQ[.GZ] format.
 3. `-o,--outprefix`: prefix of output files.
 
+Please note there is an option `--tech`, which defaults to `illumina`. Use
+`--tech ont` for nanopore reads.
 
-Run on one file of reads:
-```
-readItAndKeep --ref_fasta ref_genome.fasta --reads1 reads1.fq.gz -o out
-```
-It will output `out.reads.fastq.gz`.
-
-Run on paired reads, in two files `reads1.fq.gz` and `reads2.fq.gz`:
+Run on paired Illumina reads, in two files `reads1.fq.gz` and `reads2.fq.gz`:
 ```
 readItAndKeep --ref_fasta ref_genome.fasta --reads1 reads1.fq.gz --reads2 reads2.fq.gz -o out
 ```
 It will output `out.reads_1.fastq.gz` and
 `out.reads_2.fastq.gz`.
+
+Run on one file of nanopore reads `reads.fq.gz`:
+```
+readItAndKeep --tech ont --ref_fasta ref_genome.fasta --reads1 reads.fq.gz -o out
+```
+It will output `out.reads.fastq.gz`.
+
 
 If the input reads files are in FASTA format, then it will output reads in
 FASTA format, calling the files `*.fasta.*` instead of `*.fastq.*`.
