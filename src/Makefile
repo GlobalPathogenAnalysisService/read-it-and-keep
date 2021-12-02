@@ -6,7 +6,7 @@ LIBGZSTREAM_A = $(GZSTREAM_DIR)/libgzstream.a
 LIBMINIMAP2_A = $(MINIMAP2_DIR)/libminimap2.a
 
 readItAndKeep: $(LIBMINIMAP2_A) $(LIBGZSTREAM_A)
-	g++ -Wall -O2 -I$(MINIMAP2_DIR)/ -I$(GZSTREAM_DIR)  -pthread -O2 readItAndKeep.cpp $(LIBMINIMAP2_A) $(LIBGZSTREAM_A) -lz -lm -o readItAndKeep
+	g++ -std=c++11 -Wall -O2 -I$(MINIMAP2_DIR)/ -I$(GZSTREAM_DIR)  -pthread -O2 readItAndKeep.cpp $(LIBMINIMAP2_A) $(LIBGZSTREAM_A) -lz -lm -o readItAndKeep
 
 $(LIBGZSTREAM_A) :
 	$(MAKE) -C $(GZSTREAM_DIR)
