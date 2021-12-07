@@ -18,6 +18,12 @@ and running:
 sudo singularity build readItAndKeep.sif Singularity.def
 ```
 
+### Docker container
+Build a docker container by cloning this repository
+and running:
+```
+docker build -f Dockerfile -t <TAG> .
+```
 
 ## Usage
 Required options:
@@ -55,7 +61,13 @@ Kept reads 2	950
 ```
 All logging messages sent to `STDERR`.
 
+### Running in Docker
 
+Some additional arguments are needs to run correctly in Docker, namely to allow access to the required fasta file as well as inputs and outputs. Below is a functional example.
+
+```
+docker run /path/to/read-it-and-keep/tests:/tests  [-v /path/to/input:/input -v /path/to/output:/output] <TAG> --ref_fasta /tests/MN908947.3.fa --reads1 /input/<SAMPLE>_1.fastq.gz --reads2 /input/<SAMPLE>_2.fastq.gz --outprefix /output/
+```
 ## Tests
 
 These are under development. To run them you will need:
