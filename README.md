@@ -25,7 +25,22 @@ and running:
 docker build -f Dockerfile -t <TAG> .
 ```
 
+### Bioconda (linux-64)
+
+From an existing environment:
+```
+conda install -c bioconda read-it-and-keep
+```
+Using a new environment (recommended):
+```
+conda create -n read-it-and-keep -c bioconda python=3 read-it-and-keep
+conda activate read-it-and-keep
+```
+
+## 
+
 ## Usage
+
 Required options:
 1. `--ref_fasta`: reference genome in FASTA format.
 2. `--reads1`: at least one reads file in FASTA[.GZ] or FASTQ[.GZ] format.
