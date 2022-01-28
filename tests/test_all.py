@@ -13,6 +13,17 @@ READ_IT_AND_KEEP = os.path.join(os.pardir, "src", "readItAndKeep")
 ART_ILLUMINA = "art_illumina"
 assert shutil.which(READ_IT_AND_KEEP) is not None
 assert shutil.which(ART_ILLUMINA) is not None
+seqs = {}
+pyfastaq.tasks.file_to_dict(COVID_REF_FASTA, seqs)
+assert len(seqs) == 1
+COVID_REF_SEQ = list(seqs.values())[0]
+
+
+def file_to_lines(filename):
+    f = pyfastaq.utils.open_file_read(filename)
+    lines = [x.rstrip() for x in f]
+    f.close()
+    return lines
 
 
 def riak_debug_check_badreads_failed_reads_ok(
@@ -42,10 +53,11 @@ def riak_debug_check_badreads_failed_reads_ok(
     return True
 
 
-def run_read_it_and_keep(reads_files, outprefix, tech):
+def run_read_it_and_keep(reads_files, outprefix, tech, enumerate_names=False):
+    enumerate_opt = "--enumerate_names" if enumerate_names else ""
     assert 1 <= len(reads_files) <= 2
     reads = " ".join([f"--reads{i+1} " + f for i, f in enumerate(reads_files)])
-    command = f"{READ_IT_AND_KEEP} --debug --tech {tech} --ref_fasta {COVID_REF_FASTA} {reads} -o {outprefix} > {outprefix}.out"
+    command = f"{READ_IT_AND_KEEP} --debug {enumerate_opt} --tech {tech} --ref_fasta {COVID_REF_FASTA} {reads} -o {outprefix} > {outprefix}.out"
     subprocess.check_output(command, shell=True)
     results = {}
     with open(f"{outprefix}.out") as f:
@@ -58,17 +70,14 @@ def run_read_it_and_keep(reads_files, outprefix, tech):
 
 def shred_ref_genome(outfile, k):
     seqs = {}
-    pyfastaq.tasks.file_to_dict(COVID_REF_FASTA, seqs)
-    assert len(seqs) == 1
-    ref = list(seqs.values())[0]
     k = 75
     with open(outfile, "w") as f:
-        for i in range(len(ref)):
+        for i in range(len(COVID_REF_SEQ)):
             end = i + k - 1
-            if end > len(ref) - 1:
+            if end > len(COVID_REF_SEQ) - 1:
                 break
             print(f">{i+1}.{end+1}", file=f)
-            print(ref[i : end + 1], file=f)
+            print(COVID_REF_SEQ[i : end + 1], file=f)
 
 
 def simulate_nanopore(
@@ -292,4 +301,56 @@ def test_delta_382_deletion():
     # was only one file
     reads_out = f"{riak_out}.reads.fasta.gz"
     assert not os.path.exists(reads_out)
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+
+
+def test_enumerate_names_unpaired():
+    outprefix = "out.enumerate_names_unpaired"
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+    read1 = COVID_REF_SEQ[0:100]
+    read2 = COVID_REF_SEQ[200:300]
+    test_reads_fa = f"{outprefix}.reads.fq"
+    with open(test_reads_fa, "w") as f:
+        print(">read1", read1, sep="\n", file=f)
+        print(">read2", read2, sep="\n", file=f)
+    riak_out = f"{outprefix}.riak"
+
+    run_read_it_and_keep([test_reads_fa], outprefix, "illumina", enumerate_names=False)
+    expect_lines = [">read1", read1, ">read2", read2]
+    assert expect_lines == file_to_lines(f"{outprefix}.reads.fasta.gz")
+    run_read_it_and_keep([test_reads_fa], outprefix, "illumina", enumerate_names=True)
+    expect_lines = [">0", read1, ">1", read2]
+    assert expect_lines == file_to_lines(f"{outprefix}.reads.fasta.gz")
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+
+
+def test_enumerate_names_paired():
+    outprefix = "out.enumerate_names_paired"
+    subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
+    read1 = COVID_REF_SEQ[0:100]
+    read2 = COVID_REF_SEQ[200:300]
+    read3 = COVID_REF_SEQ[300:400]
+    read4 = COVID_REF_SEQ[400:500]
+    test_reads_fa1 = f"{outprefix}.reads.1.fq"
+    test_reads_fa2 = f"{outprefix}.reads.2.fq"
+    with open(test_reads_fa1, "w") as f:
+        print(">read1", read1, sep="\n", file=f)
+        print(">read2", read2, sep="\n", file=f)
+    with open(test_reads_fa2, "w") as f:
+        print(">read1", read3, sep="\n", file=f)
+        print(">read2", read4, sep="\n", file=f)
+    riak_out = f"{outprefix}.riak"
+
+    fq_list = [test_reads_fa1, test_reads_fa2]
+    run_read_it_and_keep(fq_list, outprefix, "illumina", enumerate_names=False)
+    expect_lines1 = [">read1", read1, ">read2", read2]
+    expect_lines2 = [">read1", read3, ">read2", read4]
+    assert expect_lines1 == file_to_lines(f"{outprefix}.reads_1.fasta.gz")
+    assert expect_lines2 == file_to_lines(f"{outprefix}.reads_2.fasta.gz")
+
+    run_read_it_and_keep(fq_list, outprefix, "illumina", enumerate_names=True)
+    expect_lines1 = [">0/1", read1, ">1/1", read2]
+    expect_lines2 = [">0/2", read3, ">1/2", read4]
+    assert expect_lines1 == file_to_lines(f"{outprefix}.reads_1.fasta.gz")
+    assert expect_lines2 == file_to_lines(f"{outprefix}.reads_2.fasta.gz")
     subprocess.check_output(f"rm -rf {outprefix}*", shell=True)
