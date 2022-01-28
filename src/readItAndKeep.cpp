@@ -37,6 +37,7 @@ public:
     std::string readsOutprefix2;
     std::string outprefix;
     std::string tech;
+    bool enumerateNames;
     bool debug;
 private:
     int parseCommandLineOpts(int argc, char *argv[]);
@@ -45,13 +46,13 @@ private:
 
 class QueryReads {
 public:
-    QueryReads(std::string& filenameIn, std::string& filenameOutprefix, CommandLineOptions& options);
+    QueryReads(std::string& filenameIn, std::string& filenameOutprefix, CommandLineOptions& options, std::string& outputNameSuffix);
     ~QueryReads();
     bool readNext();
     void resetForNextRefSeq();
     void map(mm_idx_t* mi, mm_mapopt_t& mopt);
     void clearMapping();
-    void write();
+    void write(unsigned long long int readNumber);
     void writeDebug();
     bool isGoodMapping();
     kseq_t* readPtr;
@@ -67,7 +68,10 @@ private:
     unsigned int minMapLength_;
     float minMapLengthPercent_;
     bool debug_;
+    char headerChar_;
+    bool isBeingRenamed_;
     bool hasQualScores_;
+    std::string outputNameSuffix_;
 };
 
 
@@ -101,8 +105,10 @@ int main(int argc, char *argv[])
 
     //mopt.flag |= MM_F_CIGAR; // perform alignment
 
-    QueryReads queryReads1(options.readsIn1, options.readsOutprefix1, options);
-    QueryReads queryReads2(options.readsIn2, options.readsOutprefix2, options);
+    std::string suffix1 = (options.readsIn2 == "" ? "" : "/1");
+    std::string suffix2 = "/2";
+    QueryReads queryReads1(options.readsIn1, options.readsOutprefix1, options, suffix1);
+    QueryReads queryReads2(options.readsIn2, options.readsOutprefix2, options, suffix2);
     Stats stats;
 
     // open index reader
@@ -125,19 +131,19 @@ int main(int argc, char *argv[])
             }
             queryReads1.map(mi, mopt);
             if (queryReads1.isGoodMapping()) {
-                queryReads1.write();
+                queryReads1.write(stats.readsKept1);
                 keptReads = true;
                 stats.readsKept1++;
                 if (queryReads2.isBeingUsed) {
-                    queryReads2.write();
+                    queryReads2.write(stats.readsKept2);
                     stats.readsKept2++;
                 }
             }
             else if (queryReads2.isBeingUsed) {
                 queryReads2.map(mi, mopt);
                 if (queryReads2.isGoodMapping()) {
-                    queryReads1.write();
-                    queryReads2.write();
+                    queryReads1.write(stats.readsKept1);
+                    queryReads2.write(stats.readsKept2);
                     keptReads = true;
                     stats.readsKept1++;
                     stats.readsKept2++;
@@ -173,6 +179,7 @@ CommandLineOptions::CommandLineOptions(int argc, char *argv[]) {
     minMapLengthPercent = 50.0;
     refFasta = "";
     debug = false;
+    enumerateNames = false;
     tech = "illumina";
     auto code = this->parseCommandLineOpts(argc, argv);
     if (code != 0) { // error parsing command line options
@@ -208,6 +215,7 @@ int CommandLineOptions::parseCommandLineOpts(int argc, char *argv[]) {
     app.add_option("-o,--outprefix", outprefix, "Prefix of output files")
         ->required();
 
+    app.add_flag("--enumerate_names", enumerateNames, "Rename the reads 1,2,3,... (for paired reads, will also add /1 or /2 on the end of names)");
     app.add_flag("--debug", debug, "Debug mode. More verbose and writes debugging files");
 
     app.add_option("--min_map_length", minMapLength, "Minimum length of match required to keep a read in bp [50]");
@@ -240,7 +248,7 @@ int CommandLineOptions::parseCommandLineOpts(int argc, char *argv[]) {
 }
 
 
-QueryReads::QueryReads(std::string& filenameIn, std::string& filenameOutprefix, CommandLineOptions& options) {
+QueryReads::QueryReads(std::string& filenameIn, std::string& filenameOutprefix, CommandLineOptions& options, std::string& outputNameSuffix) {
     if (filenameIn != "") {
         filehandleIn_ = gzopen(filenameIn.c_str(), "r");
         if (!filehandleIn_) {
@@ -255,10 +263,12 @@ QueryReads::QueryReads(std::string& filenameIn, std::string& filenameOutprefix, 
         if (gzgetc(filehandleIn_) == '@') {
             hasQualScores_ = true;
             filenameOut += ".fastq.gz";
+            headerChar_ = '@';
         }
         else {
             hasQualScores_ = false;
             filenameOut += ".fasta.gz";
+            headerChar_ = '>';
         }
         gzrewind(filehandleIn_);
 
@@ -277,6 +287,8 @@ QueryReads::QueryReads(std::string& filenameIn, std::string& filenameOutprefix, 
     minMapLength_ = options.minMapLength;
     minMapLengthPercent_ = options.minMapLengthPercent;
     debug_ = options.debug;
+    isBeingRenamed_ = options.enumerateNames;
+    outputNameSuffix_ = outputNameSuffix;
     if (isBeingUsed and debug_) {
         std::string filename = filenameOutprefix + ".debug";
         filehandleDebugOut_.open(filename);
@@ -310,22 +322,22 @@ void QueryReads::clearMapping() {
     free(reg_);
 }
 
-void QueryReads::write() {
-    if (hasQualScores_) {
-        filehandleOut_ << '@' << readPtr->name.s;
-        if (readPtr->comment.l > 0) {
+void QueryReads::write(unsigned long long int readNumber) {
+    if (isBeingRenamed_) {
+        filehandleOut_ << headerChar_ << readNumber << outputNameSuffix_;
+    }
+    else {
+        filehandleOut_ << headerChar_ << readPtr->name.s;
+        if (readPtr->comment.l > 0 and not isBeingRenamed_) {
             filehandleOut_ << ' ' << readPtr->comment.s;
         }
-        filehandleOut_ << '\n'
-                       << readPtr->seq.s << '\n'
+    }
+    if (hasQualScores_) {
+        filehandleOut_ << '\n' << readPtr->seq.s << '\n'
                        << "+\n"
                        << readPtr->qual.s << '\n';
     }
     else {
-        filehandleOut_ << '>' << readPtr->name.s;
-        if (readPtr->comment.l > 0) {
-            filehandleOut_ << ' ' << readPtr->comment.s;
-        }
         filehandleOut_ << '\n' << readPtr->seq.s << '\n';
     }
 }
@@ -340,7 +352,6 @@ void QueryReads::writeDebug() {
                         << '\t' << readPtr->seq.s
                         << '\t' << readPtr->qual.s << '\n';
 }
-
 
 bool QueryReads::isGoodMapping() {
     int j;
