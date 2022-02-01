@@ -104,3 +104,10 @@ cd src
 make
 make test
 ```
+
+## Acknowledgements
+
+This repository includes unedited copies of the code from:
+* [gzstream](https://www.cs.unc.edu/Research/compgeom/gzstream/), [LGPL 2.1 licence](https://github.com/GenomePathogenAnalysisService/read-it-and-keep/blob/main/src/ext/gzstream/COPYING.LIB)
+* [minimap2](https://github.com/lh3/minimap2), [MIT licence](https://github.com/GenomePathogenAnalysisService/read-it-and-keep/blob/main/src/ext/minimap2-2.22/LICENSE.txt)
+* [CLI11](https://github.com/CLIUtils/CLI11) header file, licence is at start of [cli11.hpp](https://github.com/GenomePathogenAnalysisService/read-it-and-keep/blob/main/src/CLI11.hpp)
