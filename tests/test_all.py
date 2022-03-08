@@ -349,8 +349,8 @@ def test_enumerate_names_paired():
     assert expect_lines2 == file_to_lines(f"{outprefix}.reads_2.fasta.gz")
 
     run_read_it_and_keep(fq_list, outprefix, "illumina", enumerate_names=True)
-    expect_lines1 = [">0/1", read1, ">1/1", read2]
-    expect_lines2 = [">0/2", read3, ">1/2", read4]
+    expect_lines1 = [">0 /1", read1, ">1 /1", read2]
+    expect_lines2 = [">0 /2", read3, ">1 /2", read4]
     assert expect_lines1 == file_to_lines(f"{outprefix}.reads_1.fasta.gz")
     assert expect_lines2 == file_to_lines(f"{outprefix}.reads_2.fasta.gz")
     subprocess.check_output(f"rm -rf {outprefix}*", shell=True)

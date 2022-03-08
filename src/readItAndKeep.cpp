@@ -12,7 +12,7 @@
 KSEQ_INIT(gzFile, gzread)
 
 
-const std::string READ_IT_AND_KEEP_VERSION = "0.2.1";
+const std::string READ_IT_AND_KEEP_VERSION = "0.2.2";
 
 const std::map<unsigned int, std::string> ERRORS = {
     {64, "Error parsing command line options or input file not found"},
@@ -105,8 +105,8 @@ int main(int argc, char *argv[])
 
     //mopt.flag |= MM_F_CIGAR; // perform alignment
 
-    std::string suffix1 = (options.readsIn2 == "" ? "" : "/1");
-    std::string suffix2 = "/2";
+    std::string suffix1 = (options.readsIn2 == "" ? "" : " /1");
+    std::string suffix2 = " /2";
     QueryReads queryReads1(options.readsIn1, options.readsOutprefix1, options, suffix1);
     QueryReads queryReads2(options.readsIn2, options.readsOutprefix2, options, suffix2);
     Stats stats;
