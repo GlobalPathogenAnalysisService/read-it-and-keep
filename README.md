@@ -22,13 +22,24 @@ conda activate read-it-and-keep
 ```
 
 ### Docker
-Build a docker container by cloning this repository and running:
+
+Get a Docker container of the latest release:
+```
+docker pull ghcr.io/genomepathogenanalysisservice/read-it-and-keep:latest
+```
+
+Alternatively, build a docker container by cloning this repository and running:
 ```
 docker build -f Dockerfile -t <TAG> .
 ```
 
 ### Singularity
-Build a singularity container by cloning this repository and running:
+[Releases](https://github.com/GenomePathogenAnalysisService/read-it-and-keep/releases)
+include a Singularity image to download, called
+`readItAndKeep_vX.Y.Z.img`, where X.Y.Z is the release version.
+
+
+Alternatively, build a singularity container by cloning this repository and running:
 ```
 sudo singularity build readItAndKeep.sif Singularity.def
 ```
