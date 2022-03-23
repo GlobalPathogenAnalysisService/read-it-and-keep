@@ -45,6 +45,16 @@ sudo singularity build readItAndKeep.sif Singularity.def
 ```
 
 
+## Running on SARS-CoV-2 data
+
+If you are using `readItAndKeep` for SARS-CoV-2 reads, then we recommend that
+you use the reference genome MN908947.3, but with the poly-A tail removed.
+This is explained in the preprint
+https://www.biorxiv.org/content/10.1101/2022.01.21.477194v1.
+A FASTA file of MN908947.3 without the poly-A tail is available in
+this repository: `tests/MN908947.3.no_poly_A.fa`.
+
+
 ## Usage
 
 To run on paired Illumina reads, in two files `reads1.fq.gz` and `reads2.fq.gz`:
