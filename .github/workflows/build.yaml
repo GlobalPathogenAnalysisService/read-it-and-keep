@@ -150,6 +150,16 @@ jobs:
         ls -lh
         echo "ls -lh art_src_MountRainier_MacOS"
         ls -lh art_src_MountRainier_MacOS
+        echo "./art_src_MountRainier_MacOS/art_illumina --help"
+        ./art_src_MountRainier_MacOS/art_illumina --help
+        echo "PATH:"
+        echo $PATH
+        export PATH=$PWD/art_src_MountRainier_MacOS:$PATH
+        echo "PATH:"
+        echo $PATH
+        echo "art_illimina --help"
+        art_illumina --help
+
         wget -q https://github.com/rrwick/Badread/archive/refs/tags/v0.2.0.tar.gz
         tar xf v0.2.0.tar.gz
         rm v0.2.0.tar.gz
@@ -169,8 +179,17 @@ jobs:
           echo "PATH:"
           echo $PATH
           cd src
-          echo "which art_illumina"
-          which art_illumina
+          art_illumina --help
           make
           make test
 
+
+
+
+
+          /Users/runner/work/read-it-and-keep/read-it-and-keep
+ls -lh
+total 0
+drwxr-xr-x   42 runner  staff   1.3K Apr 20 17:01 art_src_MountRainier_MacOS
+drwxr-xr-x  128 runner  staff   4.0K Apr 20 17:00 gsl-2.7.1
+ls -lh art_src_MountRainier_MacOS
