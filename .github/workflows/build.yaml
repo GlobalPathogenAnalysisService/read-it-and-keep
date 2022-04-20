@@ -183,13 +183,3 @@ jobs:
           make
           make test
 
-
-
-
-
-          /Users/runner/work/read-it-and-keep/read-it-and-keep
-ls -lh
-total 0
-drwxr-xr-x   42 runner  staff   1.3K Apr 20 17:01 art_src_MountRainier_MacOS
-drwxr-xr-x  128 runner  staff   4.0K Apr 20 17:00 gsl-2.7.1
-ls -lh art_src_MountRainier_MacOS
