@@ -165,7 +165,7 @@ jobs:
           pwd
           echo "PATH:"
           echo $PATH
-          export PATH=$PWD/art_bin_MountRainier_MacOS:$PATH
+          export PATH=$PWD/art_src_MountRainier_MacOS:$PATH
           echo "PATH:"
           echo $PATH
           cd src
