@@ -125,6 +125,15 @@ jobs:
     - name: Install dependencies
       run: |
         pip3 install pytest pyfastaq
+        wget -q https://ftp.gnu.org/gnu/gsl/gsl-2.7.1.tar.gz
+        tar xf gsl-2.7.1.tar.gz
+        rm gsl-2.7.1.tar.gz
+        cd gsl-2.7.1
+        ./configure
+        make
+        make install
+        cd ..
+
         wget -q https://www.niehs.nih.gov/research/resources/assets/docs/artsrcmountrainier2016.06.05macos.tgz
         tar xf artsrcmountrainier2016.06.05macos.tgz
         rm artsrcmountrainier2016.06.05macos.tgz
