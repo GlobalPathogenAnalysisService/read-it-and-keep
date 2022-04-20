@@ -137,6 +137,13 @@ jobs:
         wget -q https://www.niehs.nih.gov/research/resources/assets/docs/artsrcmountrainier2016.06.05macos.tgz
         tar xf artsrcmountrainier2016.06.05macos.tgz
         rm artsrcmountrainier2016.06.05macos.tgz
+        cd art_src_MountRainier_MacOS
+        export CFLAGS="$CFLAGS -I/usr/local/include" CPPFLAGS="$CPPFLAGS -I/usr/local/include" LDFLAGS="$LDFLAGS -L/usr/local/lib"
+        echo "ART: configure"
+        ./configure
+        echo "ART: make"
+        make
+        cd ..
         echo "pwd"
         pwd
         echo "ls -lh"
