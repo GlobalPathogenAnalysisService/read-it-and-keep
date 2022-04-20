@@ -155,7 +155,7 @@ jobs:
         export PATH=$PWD/art_src_MountRainier_MacOS:$PATH
         echo "PATH:"
         echo $PATH
-        echo "art_illimina --help"
+        echo "art_illumina --help"
         art_illumina --help | cat
 
         wget -q https://github.com/rrwick/Badread/archive/refs/tags/v0.2.0.tar.gz
@@ -171,6 +171,12 @@ jobs:
       run: |
           echo "pwd:"
           pwd
+          echo "ls -lh"
+          ls -lh
+          echo "ls -lh art_src_MountRainier_MacOS"
+          ls -lh art_src_MountRainier_MacOS
+          echo "find . -name art_illumina"
+          find . -name art_illumina
           echo "PATH:"
           echo $PATH
           export PATH=$PWD/art_src_MountRainier_MacOS:$PATH
