@@ -6,6 +6,7 @@ on:
       - 'v*.*.*'
     branches:
       - main
+      - github_actions_mac
   pull_request:
     branches:
       - main
@@ -16,7 +17,7 @@ env:
 
 jobs:
   build:
-    name: Build
+    name: Build linux/singularity
     runs-on: ubuntu-20.04
     steps:
 
@@ -114,3 +115,21 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+
+
+  mac_build:
+    name: Build mac os
+    runs-on: macos-11
+    steps:
+
+    - name: Install dependencies
+      run: |
+        pip3 install pytest pyfastaq
+
+    - name: Check out code for the build
+      uses: actions/checkout@v2
+
+    - name: Build and run tests
+      run: |
+          cd src
+          make
