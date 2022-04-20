@@ -150,8 +150,6 @@ jobs:
         ls -lh
         echo "ls -lh art_src_MountRainier_MacOS"
         ls -lh art_src_MountRainier_MacOS
-        echo "./art_src_MountRainier_MacOS/art_illumina"
-        ./art_src_MountRainier_MacOS/art_illumina
         wget -q https://github.com/rrwick/Badread/archive/refs/tags/v0.2.0.tar.gz
         tar xf v0.2.0.tar.gz
         rm v0.2.0.tar.gz
