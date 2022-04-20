@@ -125,6 +125,14 @@ jobs:
     - name: Install dependencies
       run: |
         pip3 install pytest pyfastaq
+        wget https://www.niehs.nih.gov/research/resources/assets/docs/artbinmountrainier2016.06.05linux64.tgz
+        tar xf artbinmountrainier2016.06.05linux64.tgz
+        rm artbinmountrainier2016.06.05linux64.tgz
+        wget -q https://github.com/rrwick/Badread/archive/refs/tags/v0.2.0.tar.gz
+        tar xf v0.2.0.tar.gz
+        rm v0.2.0.tar.gz
+        cd Badread-0.2.0
+        pip3 install .
 
     - name: Check out code for the build
       uses: actions/checkout@v2
@@ -133,3 +141,6 @@ jobs:
       run: |
           cd src
           make
+          export PATH=../art_bin_MountRainier:$PATH
+          make test
+
