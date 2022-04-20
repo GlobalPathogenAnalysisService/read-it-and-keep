@@ -125,15 +125,17 @@ jobs:
     - name: Install dependencies
       run: |
         pip3 install pytest pyfastaq
-        wget -q https://www.niehs.nih.gov/research/resources/assets/docs/artbinmountrainier2016.06.05linux64.tgz
-        tar xf artbinmountrainier2016.06.05linux64.tgz
-        rm artbinmountrainier2016.06.05linux64.tgz
+        wget -q https://www.niehs.nih.gov/research/resources/assets/docs/artsrcmountrainier2016.06.05macos.tgz
+        tar xf artsrcmountrainier2016.06.05macos.tgz
+        rm artsrcmountrainier2016.06.05macos.tgz
         echo "pwd"
         pwd
         echo "ls -lh"
         ls -lh
-        echo "ls -lh art_bin_MountRainier"
-        ls -lh art_bin_MountRainier
+        echo "ls -lh art_src_MountRainier_MacOS"
+        ls -lh art_src_MountRainier_MacOS
+        echo "./art_src_MountRainier_MacOS/art_illumina"
+        ./art_src_MountRainier_MacOS/art_illumina
         wget -q https://github.com/rrwick/Badread/archive/refs/tags/v0.2.0.tar.gz
         tar xf v0.2.0.tar.gz
         rm v0.2.0.tar.gz
@@ -149,10 +151,12 @@ jobs:
           pwd
           echo "PATH:"
           echo $PATH
-          export PATH=$PWD/art_bin_MountRainier:$PATH
+          export PATH=$PWD/art_bin_MountRainier_MacOS:$PATH
           echo "PATH:"
           echo $PATH
           cd src
+          echo "which art_illumina"
+          which art_illumina
           make
           make test
 
