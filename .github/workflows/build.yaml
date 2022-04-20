@@ -132,7 +132,7 @@ jobs:
         pwd
         echo "ls -lh"
         ls -lh
-        "echo ls -lh art_bin_MountRainier"
+        echo "ls -lh art_bin_MountRainier"
         ls -lh art_bin_MountRainier
         wget -q https://github.com/rrwick/Badread/archive/refs/tags/v0.2.0.tar.gz
         tar xf v0.2.0.tar.gz
@@ -145,6 +145,8 @@ jobs:
 
     - name: Build and run tests
       run: |
+          echo "pwd:"
+          pwd
           echo "PATH:"
           echo $PATH
           export PATH=$PWD/art_bin_MountRainier:$PATH
