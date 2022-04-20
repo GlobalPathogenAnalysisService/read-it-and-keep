@@ -122,6 +122,9 @@ jobs:
     runs-on: macos-11
     steps:
 
+    - name: Check out code for the build
+      uses: actions/checkout@v2
+
     - name: Install dependencies
       run: |
         pip3 install pytest pyfastaq
@@ -163,9 +166,6 @@ jobs:
         rm v0.2.0.tar.gz
         cd Badread-0.2.0
         pip3 install .
-
-    - name: Check out code for the build
-      uses: actions/checkout@v2
 
     - name: Build and run tests
       run: |
