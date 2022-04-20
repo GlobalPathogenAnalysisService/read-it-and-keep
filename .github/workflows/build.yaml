@@ -139,8 +139,8 @@ jobs:
 
     - name: Build and run tests
       run: |
+          export PATH=$PWD/art_bin_MountRainier:$PATH
           cd src
           make
-          export PATH=../art_bin_MountRainier:$PATH
           make test
 
