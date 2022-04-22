@@ -6,7 +6,6 @@ on:
       - 'v*.*.*'
     branches:
       - main
-      - github_actions_mac
   pull_request:
     branches:
       - main
