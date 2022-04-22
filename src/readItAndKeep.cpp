@@ -328,7 +328,7 @@ void QueryReads::write(unsigned long long int readNumber) {
     }
     else {
         filehandleOut_ << headerChar_ << readPtr->name.s;
-        if (readPtr->comment.l > 0 and not isBeingRenamed_) {
+        if (readPtr->comment.s != 0 and readPtr->comment.l > 0 and not isBeingRenamed_) {
             filehandleOut_ << ' ' << readPtr->comment.s;
         }
     }
@@ -348,7 +348,7 @@ void QueryReads::writeDebug() {
         return;
     }
     filehandleDebugOut_ << "REJECTED_READ\t" << readPtr->name.s
-                        << '\t' << readPtr->comment.s
+                        << '\t' << ((readPtr->comment.s != 0 and readPtr->comment.l > 0) ? readPtr->comment.s : "NA")
                         << '\t' << readPtr->seq.s
                         << '\t' << readPtr->qual.s << '\n';
 }
@@ -357,7 +357,7 @@ bool QueryReads::isGoodMapping() {
     int j;
     if (debug_) {
         filehandleDebugOut_ << "MAPPING_COUNT\t" << readPtr->name.s
-                            << '\t' << readPtr->comment.s
+                            << '\t' << ((readPtr->comment.s != 0 and readPtr->comment.l > 0) ? readPtr->comment.s : "NA")
                             << '\t' << n_reg_ << '\n';
     }
     for (j = 0; j < n_reg_; ++j) {
@@ -367,7 +367,7 @@ bool QueryReads::isGoodMapping() {
         bool ok = (minMapLength_ <= (unsigned int) (r->qe - r->qs) or minMapLengthPercent_ <= 100.0 * (r->qe - r->qs) / readPtr->seq.l);
         if (debug_) {
             filehandleDebugOut_ << "MAPPING\t" << readPtr->name.s
-                       << '\t' << readPtr->comment.s
+                       << '\t' << ((readPtr->comment.s != 0 and readPtr->comment.l > 0) ? readPtr->comment.s : "NA")
                        << '\t' << r->qs << "-" << r->qe
                        << '\t' << "+-"[r->rev]
                        << "\tpass:" << ok << '\n';
