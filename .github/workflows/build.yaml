@@ -142,24 +142,10 @@ jobs:
         rm artsrcmountrainier2016.06.05macos.tgz
         cd art_src_MountRainier_MacOS
         export CFLAGS="$CFLAGS -I/usr/local/include" CPPFLAGS="$CPPFLAGS -I/usr/local/include" LDFLAGS="$LDFLAGS -L/usr/local/lib"
-        echo "ART: configure"
         ./configure
-        echo "ART: make"
         make
         cd ..
-        echo "pwd"
         pwd
-        echo "ls -lh"
-        ls -lh
-        echo "ls -lh art_src_MountRainier_MacOS"
-        ls -lh art_src_MountRainier_MacOS
-        echo "PATH:"
-        echo $PATH
-        export PATH=$PWD/art_src_MountRainier_MacOS:$PATH
-        echo "PATH:"
-        echo $PATH
-        echo "art_illumina --help"
-        art_illumina --help | cat
 
         wget -q https://github.com/rrwick/Badread/archive/refs/tags/v0.2.0.tar.gz
         tar xf v0.2.0.tar.gz
@@ -169,21 +155,8 @@ jobs:
 
     - name: Build and run tests
       run: |
-          echo "pwd:"
-          pwd
-          echo "ls -lh"
-          ls -lh
-          echo "ls -lh art_src_MountRainier_MacOS"
-          ls -lh art_src_MountRainier_MacOS
-          echo "find . -name art_illumina"
-          find . -name art_illumina
-          echo "PATH:"
-          echo $PATH
           export PATH=$PWD/art_src_MountRainier_MacOS:$PATH
-          echo "PATH:"
-          echo $PATH
           cd src
-          art_illumina --help | cat
           make
           make test
 
