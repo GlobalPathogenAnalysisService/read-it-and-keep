@@ -12,7 +12,7 @@
 KSEQ_INIT(gzFile, gzread)
 
 
-const std::string READ_IT_AND_KEEP_VERSION = "0.2.2";
+const std::string READ_IT_AND_KEEP_VERSION = "0.3.0";
 
 const std::map<unsigned int, std::string> ERRORS = {
     {64, "Error parsing command line options or input file not found"},
