@@ -9,7 +9,7 @@ Make the executable `src/readItAndKeep` by running:
 cd src && make
 ```
 
-### Bioconda ![Platforms](https://anaconda.org/bioconda/read-it-and-keep/badges/platforms.svg)
+### Bioconda ![Platforms](https://anaconda.org/bioconda/read-it-and-keep/badges/platforms.svg) ![Versions](https://anaconda.org/bioconda/read-it-and-keep/badges/version.svg) ![Downloads](https://anaconda.org/bioconda/read-it-and-keep/badges/downloads.svg)
 
 From an existing environment:
 ```
