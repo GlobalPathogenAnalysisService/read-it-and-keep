@@ -57,7 +57,9 @@ this repository: `tests/MN908947.3.no_poly_A.fa`.
 
 ## Usage
 
-To run on paired Illumina reads, in two files `reads1.fq.gz` and `reads2.fq.gz`:
+ReadItAndKeep works by keeping the reads that match the provided target genome.
+To run on paired Illumina reads, in two files `reads1.fq.gz` and `reads2.fq.gz`, keeping
+only reads that match the genome in `ref_genome.fasta`:
 
 ```
 readItAndKeep --ref_fasta ref_genome.fasta --reads1 reads1.fq.gz --reads2 reads2.fq.gz -o out
