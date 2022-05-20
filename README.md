@@ -1,4 +1,6 @@
+[![DOI](https://img.shields.io/badge/DOI-10.1093/bioinformatics/btac311-blue.svg)](https://doi.org/10.1093/bioinformatics/btac311)
 # read-it-and-keep
+
 Read contamination removal.
 
 
