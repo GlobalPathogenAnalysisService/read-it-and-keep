@@ -28,7 +28,7 @@ conda activate read-it-and-keep
 
 Get a Docker container of the latest release:
 ```
-docker pull ghcr.io/genomepathogenanalysisservice/read-it-and-keep:latest
+docker pull ghcr.io/globalpathogenanalysisservice/read-it-and-keep:latest
 ```
 
 Alternatively, build a docker container by cloning this repository and running:
@@ -37,7 +37,7 @@ docker build -f Dockerfile -t <TAG> .
 ```
 
 ### Singularity
-[Releases](https://github.com/GenomePathogenAnalysisService/read-it-and-keep/releases)
+[Releases](https://github.com/GlobalPathogenAnalysisService/read-it-and-keep/releases)
 include a Singularity image to download, called
 `readItAndKeep_vX.Y.Z.img`, where X.Y.Z is the release version.
 
@@ -134,6 +134,6 @@ make test
 ## Acknowledgements
 
 This repository includes unedited copies of the code from:
-* [gzstream](https://www.cs.unc.edu/Research/compgeom/gzstream/), [LGPL 2.1 licence](https://github.com/GenomePathogenAnalysisService/read-it-and-keep/blob/main/src/ext/gzstream/COPYING.LIB)
-* [minimap2](https://github.com/lh3/minimap2), [MIT licence](https://github.com/GenomePathogenAnalysisService/read-it-and-keep/blob/main/src/ext/minimap2-2.22/LICENSE.txt)
-* [CLI11](https://github.com/CLIUtils/CLI11) header file, licence is at start of [cli11.hpp](https://github.com/GenomePathogenAnalysisService/read-it-and-keep/blob/main/src/CLI11.hpp)
+* [gzstream](https://www.cs.unc.edu/Research/compgeom/gzstream/), [LGPL 2.1 licence](https://github.com/GlobalPathogenAnalysisService/read-it-and-keep/blob/main/src/ext/gzstream/COPYING.LIB)
+* [minimap2](https://github.com/lh3/minimap2), [MIT licence](https://github.com/GlobalPathogenAnalysisService/read-it-and-keep/blob/main/src/ext/minimap2-2.22/LICENSE.txt)
+* [CLI11](https://github.com/CLIUtils/CLI11) header file, licence is at start of [cli11.hpp](https://github.com/GlobalPathogenAnalysisService/read-it-and-keep/blob/main/src/CLI11.hpp)
